@@ -10,6 +10,22 @@ SHELL ["powershell", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop';
 
 ADD files/ /Files/
 
+# TODO only extract the required files
+# Add-Type -Assembly System.IO.Compression.FileSystem
+
+# #extract list entries for dir myzipdir/c/ into myzipdir.zip
+# $zip = [IO.Compression.ZipFile]::OpenRead("c:\temp\myzipdir.zip")
+# $entries=$zip.Entries | where {$_.FullName -like 'myzipdir/c/*' -and $_.FullName -ne 'myzipdir/c/'} 
+
+# #create dir for result of extraction
+# New-Item -ItemType Directory -Path "c:\temp\c" -Force
+
+# #extraction
+# $entries | foreach {[IO.Compression.ZipFileExtensions]::ExtractToFile( $_, "c:\temp\c\" + $_.Name) }
+
+# #free object
+# $zip.Dispose()
+
 RUN Expand-Archive -Path /Files/$Env:SITECORE_PACKAGE -DestinationPath /Files/Sitecore 
 RUN Expand-Archive -Path /Files/$Env:XCONNECT_PACKAGE -DestinationPath /Files/Xconnect 
 
