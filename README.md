@@ -5,7 +5,7 @@ This repository contains experimental code that we use in development setups. We
 Hopefully this will help you to get up and running with Sitecore and Docker. By no means we consider ourselves Docker experts and thus expect these images to still contain a lot of bugs. Great help for creating this setup was provided by the [sitecoreops](https://github.com/sitecoreops/sitecore-images) and [sitecore-nine-docker](https://github.com/pbering/sitecore-nine-docker) repos. Please feel free to provide feedback by creating an issue, PR, etc. 
 
 # Requirements
-- Windows 10 update 1709 (with Hyper-V enabled)
+- Windows 10 update 1803 (with Hyper-V enabled)
 - Docker for Windows (version 1712 or better): https://docs.docker.com/docker-for-windows/
 - Visual Studio 15.5.3
 - Sitecore installation files

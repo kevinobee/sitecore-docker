@@ -1,7 +1,7 @@
 # escape=`
 
 # Stage 0: prepare files
-FROM microsoft/aspnet:4.7.1-windowsservercore-1709 AS prepare
+FROM microsoft/aspnet:4.7.2-windowsservercore-1803 AS prepare
 
 ARG CONFIG_PACKAGE
 
@@ -13,7 +13,7 @@ RUN Expand-Archive -Path /Files/$Env:CONFIG_PACKAGE -DestinationPath /Files/Conf
 
 
 # Stage 1: create actual image
-FROM microsoft/aspnet:4.7.1-windowsservercore-1709
+FROM microsoft/aspnet:4.7.2-windowsservercore-1803
 
 ARG SQL_SA_PASSWORD
 ARG SQL_DB_PREFIX

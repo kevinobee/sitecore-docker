@@ -1,7 +1,7 @@
 # escape=`
 
 # Stage 0: prepare files
-FROM microsoft/aspnet:4.7.1-windowsservercore-1709 AS prepare
+FROM microsoft/aspnet:4.7.2-windowsservercore-1803 AS prepare
 
 ARG SITECORE_PACKAGE
 ARG XCONNECT_PACKAGE
@@ -59,5 +59,3 @@ RUN $DB_NAME='{0}_Xdb.Collection.ShardMapManager' -f $Env:DB_PREFIX; `
 RUN $sqlcmd = 'UPDATE [{0}_Xdb.Collection.ShardMapManager].[__ShardManagement].[ShardsGlobal] SET ServerName = ''{1}''' -f $Env:DB_PREFIX, $Env:HOST_NAME; `
     sqlcmd -Q $sqlcmd; `
     sqlcmd -Q \"EXEC sp_MSforeachdb 'IF charindex(''Sitecore'', ''?'' ) = 1 BEGIN EXEC [?]..sp_changedbowner ''sa'' END'\" 
-
-RUN Add-WindowsFeature Web-Server
