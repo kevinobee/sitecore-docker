@@ -32,14 +32,17 @@ COPY --from=prepare /Files/Config /Files/Config/
 ADD scripts /Scripts
 
 ENV SOLR_CERT_PATH "c:\\Files\\solr.pfx"
-ENV XCONNECT_CERT_PATH "C:\\Files\\xConnect.pfx"
+ENV XCONNECT_CERT_PATH "C:\\Files\\xConnect.client.pfx"
+ENV XCONNECT_SSL_PATH "C:\\Files\\xconnect.pfx"
 
 # Trust Self signed certificates
 RUN /Scripts/Import-Certificate.ps1 -certificateFile $Env:SOLR_CERT_PATH -secret 'secret' -storeName 'Root' -storeLocation 'LocalMachine'
 RUN /Scripts/Import-Certificate.ps1 -certificateFile $Env:XCONNECT_CERT_PATH -secret 'secret' -storeName 'Root' -storeLocation 'LocalMachine'
+RUN /Scripts/Import-Certificate.ps1 -certificateFile $Env:XCONNECT_SSL_PATH -secret 'secret' -storeName 'Root' -storeLocation 'LocalMachine'
 
 # Import XConnect certificate
 RUN /Scripts/Import-Certificate.ps1 -certificateFile $Env:XCONNECT_CERT_PATH -secret 'secret' -storeName 'My' -storeLocation 'LocalMachine'
+RUN /Scripts/Import-Certificate.ps1 -certificateFile $Env:XCONNECT_SSL_PATH -secret 'secret' -storeName 'My' -storeLocation 'LocalMachine'
 
 RUN /Scripts/Install-SIF.ps1
 
@@ -61,15 +64,13 @@ RUN $config = Get-Content $Env:SIF_CONFIG | Where-Object { $_ -notmatch '^\s*\/\
     $config.Tasks.InstallWDP.Params.Arguments | Add-Member -Name 'Skip' -Value @(@{'ObjectName' = 'dbDacFx'}, @{'ObjectName' = 'dbFullSql'}) -MemberType NoteProperty; `
     ConvertTo-Json $config -Depth 50 | Set-Content -Path $Env:SIF_CONFIG
 
-RUN Install-SitecoreConfiguration -Path "c:\\Files\\Config\\xconnect-createcert.json" `
-    -CertificateName "xconnect_client"
-
 RUN $solrUrl = 'https://solr:{0}/solr' -f $Env:SOLR_PORT; `
     Install-SitecoreConfiguration -Path $Env:SIF_CONFIG `
     -Package c:/Files/$Env:XCONNECT_PACKAGE `
     -LicenseFile "c:\\Files\\license.xml" `
     -Sitename $Env:SITE_NAME `
     -XConnectCert "xConnect.client" `
+    -SSLCert "xConnect" `
     -SqlDbPrefix $Env:SQL_DB_PREFIX `
     -SqlServer $Env:SQL_SERVER `
     -SqlAdminUser "sa" `
