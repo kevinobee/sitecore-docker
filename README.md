@@ -33,8 +33,9 @@ Next, modify the `.env` file and change the build parameters if needed:
 
 Now perform the Docker build step:
 ```
-PS> docker-compose build
-``` 
+PS> docker-compose build -m 4GB
+```
+Notice that this allocates extra memory for the build process. Otherwise, when running under Windows 10 (as it is forced to use isolation mode hyper-v) only has 1GB available during build which might not be enough for the SQL image.
 
 The build results in the following Docker images:
 - sitecore: IIS + ASP.NET + Sitecore
@@ -64,7 +65,7 @@ PS> mkdir -p wwwroot/sitecore
 
 To start Sitecore:
 ```
-PS> docker-compose up
+PS> docker-compose up -d
 ```
 
 ## DNS

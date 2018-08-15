@@ -9,26 +9,11 @@ ARG XCONNECT_PACKAGE
 SHELL ["powershell", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop';"]
 
 ADD files/ /Files/
+ADD scripts/ /Scripts/
 
-# TODO only extract the required files
-# Add-Type -Assembly System.IO.Compression.FileSystem
-
-# #extract list entries for dir myzipdir/c/ into myzipdir.zip
-# $zip = [IO.Compression.ZipFile]::OpenRead("c:\temp\myzipdir.zip")
-# $entries=$zip.Entries | where {$_.FullName -like 'myzipdir/c/*' -and $_.FullName -ne 'myzipdir/c/'} 
-
-# #create dir for result of extraction
-# New-Item -ItemType Directory -Path "c:\temp\c" -Force
-
-# #extraction
-# $entries | foreach {[IO.Compression.ZipFileExtensions]::ExtractToFile( $_, "c:\temp\c\" + $_.Name) }
-
-# #free object
-# $zip.Dispose()
-
-RUN Expand-Archive -Path /Files/$Env:SITECORE_PACKAGE -DestinationPath /Files/Sitecore 
-RUN Expand-Archive -Path /Files/$Env:XCONNECT_PACKAGE -DestinationPath /Files/Xconnect 
-
+RUN /Scripts/Expand-Zip.ps1 -FileName "/Files/$Env:SITECORE_PACKAGE" -OutputDir '/Files/Output' -Regex '.dacpac$'; `
+    /Scripts/Expand-Zip.ps1 -FileName "/Files/$Env:XCONNECT_PACKAGE" -OutputDir '/Files/Output' -Regex '.dacpac$'; `
+    /Scripts/Expand-Zip.ps1 -FileName "/Files/$Env:XCONNECT_PACKAGE" -OutputDir '/Files/Output/SqlShardingDeploymentTool' -Regex 'collectiondeployment';
 
 # Stage 1: create actual image
 FROM microsoft/mssql-server-windows-express:2016-sp1-windowsservercore-10.0.14393.1715
@@ -39,39 +24,17 @@ ARG DB_PREFIX
 ARG HOST_NAME
 
 ENV ACCEPT_EULA "Y"
-ENV SQL_PACKAGE_EXE='C:\Program Files (x86)\Microsoft SQL Server\*\DAC\bin\SqlPackage.exe'
 
 # Add files
-COPY --from=prepare /Files/Sitecore /Files/Sitecore/
-COPY --from=prepare /Files/Xconnect /Files/Xconnect/
+COPY --from=prepare /Files/Output/ /Files/
+COPY --from=prepare /Scripts/Install-Databases.ps1 /Scripts/Install-Databases.ps1
 
 # Install databases
-RUN $name = '{0}_MarketingAutomation' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Marketingautomation.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Processing.Pools' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Processing.pools.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_ReferenceData' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Referencedata.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Core' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Core.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Master' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Master.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Web' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Web.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Reporting' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Reporting.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_Processing.Tasks' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Processing.tasks.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `       
-    $name = '{0}_Messaging' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Messaging.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `
-    $name = '{0}_EXM.Master' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.Exm.master.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `  	
-    $name = '{0}_Xdb.Collection.Shard1' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Xconnect/Sitecore.Xdb.Collection.Shard1.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME; `  	
-    $name = '{0}_ExperienceForms' -f $Env:DB_PREFIX; & $Env:SQL_PACKAGE_EXE /a:Publish /sf:'c:/Files/Sitecore/Sitecore.ExperienceForms.dacpac' /tdn:$name /tsn:$Env:COMPUTERNAME 
 
-RUN $DB_NAME='{0}_Xdb.Collection.ShardMapManager' -f $Env:DB_PREFIX; `
-    $SHARD_NAME_PREFIX='{0}_Xdb.Collection.Shard' -f $Env:DB_PREFIX; `
-    /Files/Xconnect/Content/Website/App_data/collectiondeployment/Sitecore.Xdb.Collection.Database.SqlShardingDeploymentTool.exe `
-    /operation create `
-    /connectionstring 'Server=.;Trusted_Connection=True;' `
-    /dbedition Basic `
-    /shardMapManagerDatabaseName "$DB_NAME" `
-    /shardMapNames 'ContactIdShardMap,DeviceProfileIdShardMap,ContactIdentifiersIndexShardMap' `
-    /shardnumber 2 `
-    /shardnameprefix "$SHARD_NAME_PREFIX" ` 
-    /shardnamesuffix '\"\"' `
-    /dacpac '/Files/Xconnect/Content/Website/App_data/collectiondeployment/Sitecore.Xdb.Collection.Database.Sql.dacpac'
-
-RUN $sqlcmd = 'UPDATE [{0}_Xdb.Collection.ShardMapManager].[__ShardManagement].[ShardsGlobal] SET ServerName = ''{1}''' -f $Env:DB_PREFIX, $Env:HOST_NAME; `
-    sqlcmd -Q $sqlcmd; `
-    sqlcmd -Q \"EXEC sp_MSforeachdb 'IF charindex(''Sitecore'', ''?'' ) = 1 BEGIN EXEC [?]..sp_changedbowner ''sa'' END'\" 
+RUN /Scripts/Install-Databases.ps1 `
+        -SQL_package_exe '\Program Files (x86)\Microsoft SQL Server\*\DAC\bin\SqlPackage.exe' `
+        -SQL_sharding_tool '\Files\SqlShardingDeploymentTool\Sitecore.Xdb.Collection.Database.SqlShardingDeploymentTool.exe' `
+        -DB_Prefix $env:DB_PREFIX `
+        -Verbose; `
+     Remove-Item \Files -Recurse -Force; `
+     Remove-Item \Scripts -Recurse -Force;
