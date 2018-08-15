@@ -45,7 +45,7 @@ The build results in the following Docker images:
 
 As final step build all Solr indexes (populate and re-build indexes) from Sitecore (reachable at https://sitecore/sitecore), and perform a Docker commit for the Solr image to persist the changes (otherwise you will have to redo this step each time):
 ```
-PS> docker commit sitecoredocker_solr_1 sitecoredocker_solr:latest
+PS> docker commit sitecore-docker_solr_1 sitecore-docker_solr:latest
 ```
 
 # Run
