@@ -30,7 +30,7 @@ COPY --from=prepare /Files/Config /Files/Config/
 COPY files/docker-entrypoint.ps1 /temp/
 ADD scripts /Scripts
 
-ENV XCONNECT_CERT_PATH "c:\\Files\\xConnect.pfx"
+ENV XCONNECT_CERT_PATH "c:\\Files\\xConnect.client.pfx"
 ENV SOLR_CERT_PATH "c:\\Files\\solr.pfx"
 ENV SITECORE_CERT_PATH "c:\\Files\\sitecore.pfx"
 
