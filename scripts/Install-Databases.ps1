@@ -30,14 +30,13 @@ function Install-Database{
 @(  "MarketingAutomation",
     "Processing.Pools",
     "Processing.Tasks",
-    "ReferenceData",    
+    "ReferenceData",
     "Core",
     "Master",
     "Web",
     "Reporting",
     "Messaging",
     "EXM.Master",
-    "Xdb.Collection.Shard1",
     "ExperienceForms"
 ) | ForEach-Object {
     Install-Database `
@@ -50,7 +49,8 @@ function Install-Database{
 Write-Verbose "executing the SQL Sharding tool"
 
 $DB_NAME='{0}_Xdb.Collection.ShardMapManager' -f $DB_Prefix
-$SHARD_NAME_PREFIX='{0}_Xdb.Collection.Shard' -f $DB_Prefix
+$SHARD_NAME_PREFIX='{0}_Xdb.Collection.' -f $DB_Prefix
+$SHARD_NAME_SUFFIX='.Shard'
 & $SQL_sharding_tool `
      /operation create `
      /connectionstring 'Server=.;Trusted_Connection=True;' `
@@ -59,7 +59,7 @@ $SHARD_NAME_PREFIX='{0}_Xdb.Collection.Shard' -f $DB_Prefix
      /shardMapNames 'ContactIdShardMap,DeviceProfileIdShardMap,ContactIdentifiersIndexShardMap' `
      /shardnumber 2 `
      /shardnameprefix "$SHARD_NAME_PREFIX" `
-     /shardnamesuffix '\"\"' `
+     /shardnamesuffix "$SHARD_NAME_SUFFIX" `
      /dacpac '/Files/Sitecore.Xdb.Collection.Database.Sql.dacpac'
 
 Write-Verbose "running scripts to change db owner to sa"
@@ -68,5 +68,5 @@ Write-Verbose "running scripts to change db owner to sa"
     "UPDATE [{0}_Xdb.Collection.ShardMapManager].[__ShardManagement].[ShardsGlobal] SET ServerName = '{1}'" -f $DB_Prefix, $Env:HOST_NAME
     "EXEC sp_MSforeachdb 'IF charindex(''Sitecore'', ''?'' ) = 1 BEGIN EXEC [?]..sp_changedbowner ''sa'' END'"
 ) | ForEach-Object {
-    & sqlcmd -Q $_    
+    & sqlcmd -Q $_
 }
